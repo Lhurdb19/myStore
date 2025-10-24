@@ -125,7 +125,6 @@ export default function SuperAdminDashboard() {
       const chartData = Object.keys(counts).map((k) => ({ label: k, value: counts[k] }));
       setActivityData(chartData);
     } catch (err) {
-      console.error("Activity fetch error", err);
       setActivityData([]);
     } finally {
       setLoadingActivity(false);
