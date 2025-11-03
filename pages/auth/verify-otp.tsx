@@ -19,6 +19,7 @@ export default function VerifyOTPPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [countdown, setCountdown] = useState(15);
 
   useEffect(() => {
     if (!router.isReady || status === "loading") return;
@@ -62,6 +63,14 @@ export default function VerifyOTPPage() {
     }
   };
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
   const handleResend = async () => {
     if (!email) return toast.error("Email not found.");
     setResending(true);
@@ -73,7 +82,10 @@ export default function VerifyOTPPage() {
       });
       const data = await res.json();
       if (!res.ok) toast.error(data.message || "Failed to resend OTP.");
-      else toast.success("OTP resent successfully. Check your email.");
+      else {
+        toast.success("OTP resent successfully. Check your email.");
+        setCountdown(30); // reset countdown
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong while resending OTP.");
@@ -119,11 +131,15 @@ export default function VerifyOTPPage() {
           Didn't receive the code?{" "}
           <button
             type="button"
-            className="text-blue-600 hover:underline"
+            className="text-green-600 hover:underline"
             onClick={handleResend}
-            disabled={resending}
+            disabled={resending || countdown > 0}
           >
-            {resending ? "Resending..." : "Resend OTP"}
+            {resending
+              ? "Resending..."
+              : countdown > 0
+                ? `Resend in ${countdown}s`
+                : "Resend OTP"}
           </button>
         </div>
       </div>

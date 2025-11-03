@@ -28,20 +28,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ✅ Send email (example using nodemailer)
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
+      host: process.env.EMAIL_HOST,
+      port: Number(process.env.EMAIL_PORT),
+      secure: false, // true for 465, false for 587
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false, // allow self-signed certificates for dev
       },
     });
 
     await transporter.sendMail({
-      from: `"Your App" <${process.env.SMTP_USER}>`,
+      from: `"ShopEase" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${newOtp}. It expires in 10 minutes.`,
+      subject: "🔐 Your New OTP Code - ShopEase",
+      html: `
+  <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; background-color: #f4f6f9; max-width: 600px; margin: auto; border-radius: 10px; color: #333;">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="https://res.cloudinary.com/damamkuye/image/upload/v1761740811/image__1_-removebg-preview_exjxtz.png" alt="ShopEase Logo" style="width: 100px; margin-bottom: 10px;" />
+      <h2 style="color: #196D1A; margin: 0;">Verify Your Account</h2>
+    </div>
+
+    <p style="font-size: 15px;">Hi ${user.name || "there"}, 👋</p>
+    <p style="font-size: 15px;">You requested a new OTP to verify your email address with <strong>ShopEase</strong>.</p>
+    
+    <div style="background:#e9ffe6; padding: 15px 20px; text-align: center; border-radius: 8px; margin: 20px 0; font-size: 20px; letter-spacing: 5px; color: #196D1A; font-weight: bold;">
+      ${newOtp}
+    </div>
+
+    <p style="font-size: 14px; color: #555;">
+      This OTP is valid for the next <strong>10 minutes</strong>.  
+      Please do not share it with anyone for your account's security.
+    </p>
+
+    <p style="font-size: 14px; margin-top: 25px;">If you did <strong>NOT</strong> request this, please ignore this message or contact our support team.</p>
+
+    <hr style="margin: 30px 0; border-top: 1px solid #ddd;" />
+
+    <p style="font-size: 13px; color: #888; text-align: center;">
+      &copy; ${new Date().getFullYear()} ShopEase. All rights reserved.<br/>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color:#196D1A; text-decoration:none;">Visit our website</a>
+    </p>
+  </div>
+  `,
     });
+
 
     return res.status(200).json({ message: "OTP resent successfully" });
   } catch (error) {
