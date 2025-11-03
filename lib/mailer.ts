@@ -106,7 +106,7 @@ export const sendAboutUsEmail = async (email: string) => {
   await transporter.sendMail({
     from: `"ShopEase" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Welcome to ShopEase — Start Shopping Smarter!",
+    subject: "Welcome to ShopEase. Start Shopping Smarter!",
     html,
   });
 };
@@ -139,7 +139,7 @@ export const sendThankYouEmail = async (email: string, orderId: string) => {
             </a>
           </div>
           <p>
-            Thank you for trusting <strong>ShopEase</strong> — we look forward to serving you again!
+            Thank you for trusting <strong>ShopEase</strong>, we look forward to serving you again!
           </p>
           <p style="margin-top: 20px;">Warm regards,</p>
           <p style="font-weight: bold;">💚 The ShopEase Team</p>
