@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 
 interface AboutSection {
   _id: string;
@@ -91,7 +92,7 @@ export default function AboutPage() {
               >
                 {item.imageUrl && (
                   <div className="w-full h-full">
-                    <img
+                    <Image width={400} height={400}
                       src={item.imageUrl}
                       alt={item.title}
                       className="object-cover w-full h-80"

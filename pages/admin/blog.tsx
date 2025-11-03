@@ -6,7 +6,6 @@ import "react-quill-new/dist/quill.snow.css";
 import { toast } from "sonner";
 import axios from "axios";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { MoreVertical, X } from "lucide-react";
 import {
   Card,
@@ -18,43 +17,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
-const ReactQuillWrapper = dynamic(async () => {
-  const { default: RQ } = await import("react-quill-new");
-  return RQ;
-}, { ssr: false });
+// ✅ Dynamically import React Quill (Client-only)
+const ReactQuillWrapper = dynamic(async () => (await import("react-quill-new")).default, {
+  ssr: false,
+});
 
+// ✅ Type for Blog
+interface Blog {
+  _id: string;
+  title: string;
+  content: string;
+  image: string;
+  category: string;
+}
+
+// ✅ Main Component
 export default function AdminBlogsPage() {
-  const quillRef = useRef<any>(null);
-  const router = useRouter();
-
+  const quillRef = useRef<any>(null); // TS ignored for now (ReactQuill issue)
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
   const [category, setCategory] = useState("Other");
   const [loading, setLoading] = useState(false);
-  const [blogs, setBlogs] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   // ✅ Modal States
-  const [showPreview, setShowPreview] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState<Blog | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [showLinkPopup, setShowLinkPopup] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
-  // ✅ Fetch blogs
+  // ✅ Fetch all blogs on mount
   useEffect(() => {
     fetchBlogs();
   }, []);
 
   const fetchBlogs = async () => {
-    const res = await fetch("/api/blogs");
-    const data = await res.json();
-    setBlogs(data);
+    try {
+      const res = await fetch("/api/blogs");
+      const data = await res.json();
+      setBlogs(data);
+    } catch (e) {
+      toast.error("Failed to load blogs");
+    }
   };
 
-  // ✅ Close dropdown when clicking outside
+  // ✅ Close dropdown menu on outside click
   useEffect(() => {
     const handleClickOutside = () => setOpenMenu(null);
     window.addEventListener("click", handleClickOutside);
@@ -80,9 +91,9 @@ export default function AdminBlogsPage() {
       try {
         const res = await axios.post("/api/cloudinary-upload", formData);
         const imageUrl = res.data.url;
-        if (!imageUrl) throw new Error("No image URL returned");
 
         setImage(imageUrl);
+
         const quill = quillRef.current?.getEditor?.();
         const range = quill?.getSelection(true);
         if (quill && range) quill.insertEmbed(range.index, "image", imageUrl);
@@ -90,13 +101,13 @@ export default function AdminBlogsPage() {
         setShowImagePopup(true);
         toast.success("Image uploaded successfully!");
       } catch (err: any) {
-        console.error("Upload error:", err.response?.data || err.message);
+        console.error("Upload error:", err.message);
         toast.error("Image upload failed");
       }
     };
   };
 
-  // ✅ Toolbar Configuration
+  // ✅ Quill Toolbar Config
   const modules = {
     toolbar: {
       container: [
@@ -113,7 +124,7 @@ export default function AdminBlogsPage() {
     },
   };
 
-  // ✅ Submit blog
+  // ✅ Submit a blog
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return toast.error("Please fill all fields");
@@ -139,29 +150,26 @@ export default function AdminBlogsPage() {
       }
     } catch (error) {
       toast.error("Failed to create blog");
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Delete blog
+  // ✅ Delete a blog
   const confirmDelete = (id: string) => setShowDeleteModal(id);
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await axios.delete(`/api/blogs/${id}`);
-      if (res.status === 200) {
-        toast.success("Blog deleted");
-        setShowDeleteModal(null);
-        fetchBlogs();
-      }
+      await axios.delete(`/api/blogs/${id}`);
+      toast.success("Blog deleted");
+      setShowDeleteModal(null);
+      fetchBlogs();
     } catch {
       toast.error("Failed to delete blog");
     }
   };
 
-  // ✅ Insert link popup handler
+  // ✅ Insert link handler
   const handleInsertLink = () => {
     const quill = quillRef.current?.getEditor?.();
     const range = quill?.getSelection();
