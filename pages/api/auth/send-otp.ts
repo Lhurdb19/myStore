@@ -10,10 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: process.env.EMAIL_HOST,   // e.g., smtp.mailgun.org
+      port: Number(process.env.EMAIL_PORT), // 587 or 465
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
 
@@ -22,37 +27,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       to: email,
       subject: "🔐 Your ShopEase OTP Code",
       html: `
-        <div style="font-family: 'Arial', sans-serif; background-color: #f9f9f9; padding: 30px; border-radius: 10px; max-width: 600px; margin: auto; color: #333;">
-          
-          <div style="text-align: center;">
-            <img src="https://res.cloudinary.com/damamkuye/image/upload/v1761740811/image__1_-removebg-preview_exjxtz.png" 
-              alt="ShopEase Logo" 
-              style="width: 120px; height: auto; margin-bottom: 15px;" />
-          </div>
-          
-          <h2 style="text-align:center; color: #196D1A;">Your One-Time Password (OTP)</h2>
-          
-          <p style="font-size: 15px; text-align:center;">
-            Use the code below to complete your verification process.
-          </p>
+  <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; background-color: #f4f6f9; max-width: 600px; margin: auto; border-radius: 10px; color: #333;">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="https://res.cloudinary.com/damamkuye/image/upload/v1761740811/image__1_-removebg-preview_exjxtz.png" alt="ShopEase Logo" style="width: 100px; margin-bottom: 10px;" />
+      <h2 style="color: #196D1A; margin: 0;">Verify Your Account</h2>
+    </div>
+    
+    <p style="font-size: 15px;">Hi ${email || "there"}, 👋</p>
+    <p style="font-size: 15px;">Welcome to <strong>ShopEase</strong>! Please use the OTP below to complete your login verification.</p>
+    
+    <div style="background:#e9ffe6; padding: 15px 20px; text-align: center; border-radius: 8px; margin: 20px 0; font-size: 26px; letter-spacing: 5px; color: #196D1A; font-weight: bold;">
+      ${otpCode}
+    </div>
 
-          <div style="background: #196D1A; color: white; text-align: center; font-size: 26px; font-weight: bold; letter-spacing: 5px; padding: 15px 0; border-radius: 8px; margin: 25px auto; max-width: 250px;">
-            ${otpCode}
-          </div>
+    <p style="font-size: 14px; color: #555;">
+      This OTP is valid for the next <strong>5 minutes</strong>.  
+      Do not share this code with anyone.
+    </p>
 
-          <p style="font-size: 14px; text-align:center; color: #555;">
-            This code will expire in <strong>5 minutes</strong>.<br/>
-            If you didn’t request this code, please ignore this email.
-          </p>
+    <hr style="margin: 30px 0; border-top: 1px solid #ddd;" />
 
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />
+    <p style="font-size: 13px; color: #888; text-align: center;">
+      &copy; ${new Date().getFullYear()} ShopEase. All rights reserved.<br/>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color:#196D1A; text-decoration:none;">Visit our website</a>
+    </p>
+  </div>
+`,
 
-          <p style="font-size: 13px; text-align: center; color: #888;">
-            &copy; ${new Date().getFullYear()} <strong>ShopEase</strong> &nbsp;|&nbsp; 
-            <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color: #196D1A; text-decoration: none;">Visit our website</a>
-          </p>
-        </div>
-      `,
     });
 
     console.log("✅ OTP email sent:", info.messageId);
