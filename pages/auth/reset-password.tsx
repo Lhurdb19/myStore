@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import Logo from "@/components/logo";
 import { toast } from "sonner";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -17,6 +17,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const { settings } = useSettings();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +71,24 @@ export default function ResetPasswordPage() {
       {/* Right Form */}
       <div className="w-full lg:w-1/3 flex flex-col text-white">
         <div className="mb-5 flex items-center justify-between">
-          <Logo />
+          {/* ✅ Dynamic Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            {settings?.logo ? (
+              <Image
+                src={settings.logo}
+                alt={settings.siteName || "Logo"}
+                width={200}
+                height={200}
+                className="rounded-md object-contain"
+              />
+            ) : (
+              <span className="text-2xl font-extrabold text-gray-800 dark:text-white">
+                <span className="text-green-600">Shop</span>Ease
+              </span>
+            )}
+            {!settings?.logo && <span className="sr-only">{settings?.siteName || "ShopEase"}</span>}
+          </Link>
+
           <Link href="/auth/login">
             <p className="text-[#196D1A] hover:text-[#fff] font-thin text-sm">
               Back to Login

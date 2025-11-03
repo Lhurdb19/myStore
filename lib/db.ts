@@ -1,27 +1,7 @@
-// // lib/db.ts
-// import mongoose from "mongoose";
-
-// const MONGODB_URI = process.env.MONGODB_URI as string;
-
-// if (!MONGODB_URI) throw new Error("Please define MONGODB_URI in .env.local");
-
-// let isConnected = false;
-
-// export const connectDB = async () => {
-//   if (isConnected) return;
-//   try {
-//     const db = await mongoose.connect(MONGODB_URI);
-//     isConnected = !!db.connections[0].readyState;
-//     console.log("MongoDB connected");
-//   } catch (error) {
-//     console.error("MongoDB connection error:", error);
-//   }
-// };
-
 // lib/db.ts
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
+import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 

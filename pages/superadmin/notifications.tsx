@@ -1,8 +1,25 @@
-// pages/superadmin/notifications.tsx
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react"; // ✅ spinner icon
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -10,6 +27,7 @@ export default function NotificationsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     title: "",
     message: "",
@@ -22,7 +40,7 @@ export default function NotificationsPage() {
     setLoading(true);
     try {
       const res = await axios.get("/api/notifications");
-      setNotifications(res.data.notifications);
+      setNotifications(res.data.notifications || []);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch notifications");
@@ -37,21 +55,23 @@ export default function NotificationsPage() {
 
   // ✅ Create new notification
   const handleSubmit = async (e: any) => {
-  e.preventDefault();
-  try {
-    const res = await axios.post("/api/notifications", form);
-    if (res.data.success) {
-      toast.success("Notification created!");
-      setForm({ title: "", message: "", type: "info", audience: "all" });
-      setShowModal(false);
-      fetchNotifications();
+    e.preventDefault();
+    setCreating(true);
+    try {
+      const res = await axios.post("/api/notifications", form, { withCredentials: true });
+      if (res.data.success) {
+        toast.success("Notification created!");
+        setForm({ title: "", message: "", type: "info", audience: "all" });
+        setShowModal(false);
+        fetchNotifications();
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Error creating notification");
+    } finally {
+      setCreating(false);
     }
-  } catch (err: any) {
-    console.error(err);
-    toast.error("Error creating notification");
-  }
-};
-
+  };
 
   // ✅ Filter and search logic
   const filteredNotifications = notifications.filter((n) => {
@@ -64,46 +84,52 @@ export default function NotificationsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">System Notifications</h1>
-
-      {/* 🔍 Search + Filter + New */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center justify-between">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Search notifications..."
-            className="border p-2 rounded-md w-64"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className="border p-2 rounded-md"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="info">Info</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
-          </select>
-        </div>
-
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          + New Notification
-        </button>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">System Notifications</h1>
+        <Button onClick={() => setShowModal(true)}>+ New Notification</Button>
       </div>
 
-      {/* 📋 Notifications List */}
+      {/* 🔍 Search + Filter */}
+      <div className="flex flex-wrap gap-3 mb-5 items-center">
+        <Input
+          type="text"
+          placeholder="Search notifications..."
+          className="w-64"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Select value={filter} onValueChange={(val) => setFilter(val)}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="Filter" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="info">Info</SelectItem>
+            <SelectItem value="warning">Warning</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 📋 Notifications Table */}
       {loading ? (
-        <p>Loading...</p>
+        <div className="space-y-4">
+          {Array(5)
+            .fill(0)
+            .map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+        </div>
       ) : filteredNotifications.length === 0 ? (
-        <p className="text-gray-500">No notifications found.</p>
+        <p className="text-gray-500 text-sm">No notifications found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border rounded-lg">
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-3 text-left">Date</th>
@@ -116,7 +142,7 @@ export default function NotificationsPage() {
             <tbody>
               {filteredNotifications.map((n) => (
                 <tr key={n._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 text-sm text-gray-600">
+                  <td className="p-3 text-gray-600">
                     {format(new Date(n.createdAt), "PPpp")}
                   </td>
                   <td className="p-3 font-medium">{n.title}</td>
@@ -133,8 +159,8 @@ export default function NotificationsPage() {
                       {n.type}
                     </span>
                   </td>
-                  <td className="p-3 text-sm">{n.audience}</td>
-                  <td className="p-3 text-sm text-gray-700">{n.message}</td>
+                  <td className="p-3">{n.audience}</td>
+                  <td className="p-3 text-gray-700">{n.message}</td>
                 </tr>
               ))}
             </tbody>
@@ -143,67 +169,77 @@ export default function NotificationsPage() {
       )}
 
       {/* 🧩 Modal Form */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-green-600 rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-            <h2 className="text-xl font-semibold mb-4">New Notification</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="border border-gray-300 p-2 w-full rounded-md"
-                required
-              />
-              <textarea
-                placeholder="Message"
-                value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
-                className="border border-gray-300 p-2 w-full rounded-md"
-                rows={3}
-                required
-              />
-              <div className="flex gap-3">
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="border bg-green-600 border-gray-300 p-2 rounded-md w-1/2"
-                >
-                  <option value="info">Info</option>
-                  <option value="warning">Warning</option>
-                  <option value="critical">Critical</option>
-                </select>
-                <select
-                  value={form.audience}
-                  onChange={(e) => setForm({ ...form, audience: e.target.value })}
-                  className="border border-gray-300 bg-green-600 p-2 rounded-md w-1/2"
-                >
-                  <option value="all">All</option>
-                  <option value="users">Users</option>
-                  <option value="admins">Admins</option>
-                </select>
-              </div>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Notification</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+            />
+            <textarea
+              placeholder="Message"
+              value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })}
+              className="w-full border rounded-md p-2 h-24"
+              required
+            />
+            <div className="flex gap-3">
+              <Select
+                value={form.type}
+                onValueChange={(val) => setForm({ ...form, type: val })}
+              >
+                <SelectTrigger className="w-1/2">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <div className="flex justify-end gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-200 rounded-md"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                >
-                  Send Notification
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <Select
+                value={form.audience}
+                onValueChange={(val) => setForm({ ...form, audience: val })}
+              >
+                <SelectTrigger className="w-1/2">
+                  <SelectValue placeholder="Audience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="users">Users</SelectItem>
+                  <SelectItem value="admins">Admins</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creating}>
+                {creating ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" /> Sending...
+                  </>
+                ) : (
+                  "Send Notification"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -14,6 +14,9 @@ import {
   ChevronsUpDown,
   ChevronUp,
   CarTaxiFront,
+  Upload,
+  LockKeyhole,
+  Network,
 } from "lucide-react";
 
 import {
@@ -41,17 +44,20 @@ import { ModeToggle } from "./mode-toggle";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation"; // ✅ For detecting active route
+import Image from "next/image";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [role, setRole] = useState<string>("Admin");
+  const { settings } = useSettings();
 
   useEffect(() => {
     if (session?.user?.role) {
       setRole(
         session.user.role.charAt(0).toUpperCase() +
-          session.user.role.slice(1)
+        session.user.role.slice(1)
       );
     }
   }, [session]);
@@ -65,13 +71,16 @@ export function AppSidebar() {
   const items = [
     { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
     { title: "Manage Deliveries", url: "/admin/deliveries", icon: Truck },
+    { title: "Upload Products", url: "/admin/upload-products", icon: Upload },
     { title: "Track Packages", url: "/admin/packages", icon: Package },
     { title: "Manage Users", url: "/admin/users", icon: Users },
     { title: "Orders History", url: "/admin/orders", icon: ClipboardList },
     { title: "Reports & Analytics", url: "/admin/reports", icon: BarChart3 },
     { title: "Notifications", url: "/admin/notifications", icon: Bell },
+    { title: "Blogs", url: "/admin/blog", icon: Network },
     { title: "Settings", url: "/admin/settings", icon: Settings },
     { title: "Payment Methods", url: "/admin/payment-method", icon: CarTaxiFront },
+    { title: "Update Password", url: "/changepassword-form", icon: LockKeyhole },
   ];
 
   return (
@@ -81,6 +90,23 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
+              {/* ✅ Dynamic Logo */}
+                <Link href="/" className="flex items-center gap-2">
+                  {settings?.logo ? (
+                    <Image
+                      src={settings.logo}
+                      alt={settings.siteName || "Logo"}
+                      width={200}
+                      height={200}
+                      className="rounded-md object-contain"
+                    />
+                  ) : (
+                    <span className="text-2xl font-extrabold text-gray-800 dark:text-white">
+                      <span className="text-green-600">Shop</span>Ease
+                    </span>
+                  )}
+                  {!settings?.logo && <span className="sr-only">{settings?.siteName || "ShopEase"}</span>}
+                </Link>
               <DropdownMenuTrigger asChild className="w-full">
                 <SidebarMenuButton>
                   {role}
@@ -118,11 +144,10 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link
                         href={item.url}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md transition ${
-                          isActive
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md transition ${isActive
                             ? "bg-blue-600 text-white"
                             : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
+                          }`}
                       >
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>

@@ -30,7 +30,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: "user" | "admin" | "superadmin";
+  role: "user" | "admin" | "superadmin" | "vendor";
   suspended: boolean;
   createdAt: string;
 }
@@ -56,6 +56,7 @@ export default function ManageUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({ name: "", email: "", role: "user" });
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // --- Bulk selection ---
@@ -63,7 +64,7 @@ export default function ManageUsersPage() {
 
   // --- Search / Filter ---
   const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState<"all" | "user" | "admin" | "superadmin">("all");
+  const [filterRole, setFilterRole] = useState<"all" | "user" | "admin" | "superadmin" | "vendor">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "suspended">("all");
 
   // --- Pagination ---
@@ -105,19 +106,18 @@ export default function ManageUsersPage() {
   const bulkAction = async (action: "suspend" | "activate" | "delete") => {
     if (!selectedIds.length) return toast.error("No users selected");
 
-    if (action === "delete" && !confirm("Are you sure you want to delete selected users?")) return;
+    if (action === "delete") {
+      setBulkDeleteOpen(true);
+      return;
+    }
 
     try {
       for (const id of selectedIds) {
-        if (action === "delete") {
-          await fetch(`/api/users/${id}`, { method: "DELETE" });
-        } else {
-          await fetch(`/api/users/${id}/suspend`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ suspend: action === "suspend" }),
-          });
-        }
+        await fetch(`/api/users/${id}/suspend`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suspend: action === "suspend" }),
+        });
       }
       toast.success("Bulk action completed");
       setSelectedIds([]);
@@ -176,8 +176,8 @@ export default function ManageUsersPage() {
       filterStatus === "all"
         ? true
         : filterStatus === "active"
-        ? !u.suspended
-        : u.suspended
+          ? !u.suspended
+          : u.suspended
     );
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -209,6 +209,7 @@ export default function ManageUsersPage() {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="user">User</SelectItem>
+              <SelectItem value="vendor">Vendor</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="superadmin">SuperAdmin</SelectItem>
             </SelectContent>
@@ -261,7 +262,7 @@ export default function ManageUsersPage() {
               <TableRow key={user._id}>
                 <TableCell>
                   <input
-                    type="checkbox"  className="cursor-pointer"
+                    type="checkbox" className="cursor-pointer"
                     checked={selectedIds.includes(user._id)}
                     onChange={(e) => {
                       const checked = e.target.checked;
@@ -361,6 +362,7 @@ export default function ManageUsersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="vendor">Vendor</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="superadmin">SuperAdmin</SelectItem>
                 </SelectContent>
@@ -391,6 +393,40 @@ export default function ManageUsersPage() {
                 await fetch(`/api/users/${userToDelete._id}`, { method: "DELETE" });
                 setDeleteOpen(false);
                 fetchUsers();
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Bulk Delete Confirmation Dialog --- */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent className="max-w-sm sm:w-full">
+          <DialogHeader>
+            <DialogTitle>Delete Selected Users</DialogTitle>
+          </DialogHeader>
+          <p className="mt-2 text-sm text-gray-600">
+            Are you sure you want to delete <span className="font-semibold">{selectedIds.length}</span>{" "}
+            selected user{selectedIds.length > 1 ? "s" : ""}? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  for (const id of selectedIds) {
+                    await fetch(`/api/users/${id}`, { method: "DELETE" });
+                  }
+                  toast.success("Selected users deleted");
+                  setBulkDeleteOpen(false);
+                  setSelectedIds([]);
+                  fetchUsers();
+                } catch {
+                  toast.error("Failed to delete selected users");
+                }
               }}
             >
               Delete

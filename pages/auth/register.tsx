@@ -5,8 +5,9 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
-import Logo from "@/components/logo";
+// import Logo from "@/components/logo";
 import { toast } from "sonner";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { settings } = useSettings();
 
   // ✅ Password rules
   const passwordRules = {
@@ -46,31 +48,39 @@ export default function RegisterPage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Server returned non-JSON:", text);
+        setError("Unexpected server response");
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok) {
         const msg = data.message || "Registration failed.";
         setError(msg);
         toast.error(msg);
         setLoading(false);
-        return; // ❌ do not redirect if invalid email
+        return;
       }
 
-      // ✅ only redirect on success
       toast.success("Registration successful! Please verify your email.");
       router.push(`/auth/verify?email=${form.email}`);
     } catch (err) {
       console.error("Registration exception:", err);
-      const msg = "Failed to connect to server.";
-      setError(msg);
-      toast.error(msg);
+      setError("Failed to connect to server.");
+      toast.error("Failed to connect to server.");
     } finally {
       setLoading(false);
     }
+
   };
 
   return (
-    <div className="w-full h-screen flex flex-col lg:flex-row justify-center items-center gap-6 lg:gap-10 px-4 lg:px-[100px] bg-[rgba(0,0,0,1.0)] fixed z-100">
+    <div className="fixed top-0 w-full h-screen flex flex-col lg:flex-row justify-center items-center gap-6 lg:gap-10 px-4 lg:px-[100px] bg-[rgba(0,0,0,1.0)] z-100">
       {/* Left Image */}
       <div className="hidden relative lg:block w-[850px] h-[600px] rounded-2xl overflow-hidden">
         <Image
@@ -101,8 +111,24 @@ export default function RegisterPage() {
           </p>
         )}
 
-        <div className="mb-5 flex items-center justify-between">
-          <Logo />
+        <div className="-mb-2 flex items-center justify-between">
+          {/* ✅ Dynamic Logo */}
+          <Link href="/" className="flex items-start justify-start gap-2">
+            {settings?.logo ? (
+              <Image
+                src={settings.logo}
+                alt={settings.siteName || "Logo"}
+                width={200}
+                height={150}
+                className="rounded-md object-contain"
+              />
+            ) : (
+              <span className="text-2xl font-extrabold text-gray-800 dark:text-white">
+                <span className="text-green-600">Shop</span>Ease
+              </span>
+            )}
+            {!settings?.logo && <span className="sr-only">{settings?.siteName || "ShopEase"}</span>}
+          </Link>
           <Link href="/auth/login">
             <p className="text-[#196D1A] hover:text-[#fff] font-thin text-sm">
               Already Registered? Login.
@@ -189,16 +215,15 @@ export default function RegisterPage() {
             className="w-full text-[#fff] bg-gray-800 border border-gray-500 px-3 py-3 rounded text-[13px] focus:ring-2 focus:ring-[#196D1A]"
           >
             <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="vendor">Vendor</option>
           </select>
 
           {/* Submit */}
           <button
             type="submit"
             disabled={!isFormComplete || loading}
-            className={`bg-[#196D1A] text-white py-4 rounded hover:bg-green-600 transition ${
-              (!isFormComplete || loading) && "opacity-70 cursor-not-allowed"
-            }`}
+            className={`bg-[#196D1A] text-white py-4 rounded hover:bg-green-600 transition ${(!isFormComplete || loading) && "opacity-70 cursor-not-allowed"
+              }`}
           >
             {loading ? "Registering..." : "Register"}
           </button>

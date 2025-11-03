@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const token = crypto.randomBytes(32).toString("hex")
   user.resetToken = token
-  user.resetTokenExpiry = Date.now() + 3600000 // 1 hour
+  user.resetTokenExpiry = Date.now() + 30 * 60 * 1000; // 30 minutes
   await user.save()
 
   const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password?token=${token}`
@@ -28,13 +28,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   })
 
   const mailOptions = {
-    from: `"MyStore" <${process.env.EMAIL_USER}>`,
+    from: `"ShopEase" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Password Reset",
+    subject: "🔐 Reset Your Password - ShopEase",
     html: `
-      <p>Click below to reset your password:</p>
-      <a href="${resetUrl}" style="color:green;">Reset Password</a>
-      <p>This link will expire in 1 hour.</p>
+      <div style="font-family: 'Arial', sans-serif; padding: 30px; background: #f7f9fb; border-radius: 10px; max-width: 600px; margin: auto; color: #333;">
+      <div style="text-align: center;">
+        <img src="https://res.cloudinary.com/damamkuye/image/upload/v1761740811/image__1_-removebg-preview_exjxtz.png" alt="ShopEase Logo" style="width: 120px; height: auto; margin-bottom: 15px;" />
+        <h2 style="color: #196D1A;">Password Reset Request</h2>
+      </div>
+      <p style="font-size: 15px;">Hello,</p>
+      <p style="font-size: 15px;">We received a request to reset your password. Click the button below to set a new one:</p>
+      
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${resetUrl}" style="background: #196D1A; color: #fff; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          Reset Password
+        </a>
+      </div>
+
+      <p style="font-size: 14px; color: #555;">
+        This link will expire in <strong>30 minutes</strong>.  
+        If you didn’t request this, please ignore this email.
+      </p>
+
+      <hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;" />
+      <p style="font-size: 13px; color: #888; text-align: center;">
+        &copy; ${new Date().getFullYear()} ShopEase. All rights reserved.<br/>
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color:#196D1A; text-decoration:none;">Visit our website</a>
+      </p>
+    </div>
     `,
   }
 

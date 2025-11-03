@@ -19,7 +19,7 @@ const ProductSchema = new Schema<IProduct>({
   slug: { type: String, required: true, unique: true },
   description: String,
   price: { type: Number, required: true },
-  images: [String],
+  images: [{type: String, required: true }],
   stock: { type: Number, default: 0 },
   category: String,
   createdBy: { type: Schema.Types.ObjectId, ref: "User" },

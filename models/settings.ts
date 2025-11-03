@@ -2,11 +2,12 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 export interface ISettings {
   siteName: string;
-  logoUrl: string;
+  logo: string;
   emailServer: {
     host: string;
     port: number;
     user: string;
+    pass: String,
   };
   security: {
     enable2FA: boolean;
@@ -17,8 +18,8 @@ export interface ISettings {
 
 const SettingsSchema = new Schema<ISettings>(
   {
-    siteName: { type: String, required: true, default: "MyStore" },
-    logoUrl: { type: String, required: true, default: "/logo.png" },
+    siteName: { type: String, required: true, default: "ShopEase" },
+    logo: { type: String, default: "/store.jpg" },
     emailServer: {
       host: { type: String, default: "" },
       port: { type: Number, default: 587 },

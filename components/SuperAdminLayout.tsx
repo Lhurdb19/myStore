@@ -17,6 +17,11 @@ import {
   Table,
   AppWindowMacIcon,
   User2,
+  Newspaper,
+  LockKeyhole,
+  Contact,
+  UserCircle,
+  Inbox,
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +35,8 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface Props {
   children: React.ReactNode;
@@ -41,6 +48,7 @@ export default function SuperAdminLayout({ children, userName }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const { settings } = useSettings();
 
   useEffect(() => {
     // Simulate loading delay (e.g., fetching session or user data)
@@ -60,6 +68,11 @@ export default function SuperAdminLayout({ children, userName }: Props) {
     { href: "/superadmin/notifications", label: "Notifications", icon: Bell },
     { href: "/superadmin/reports", label: "Reports & Analytics", icon: Text },
     { href: "/superadmin/payment-methods", label: "Payment Methods", icon: Text },
+    {href: "/superadmin/newsletter", label: "Newsletter Subscribers", icon: Newspaper },
+    {href: "/superadmin/about", label: "About Us", icon: UserCircle },
+    {href: "/superadmin/contact", label: "Contact Info", icon: Contact },
+    {href: "/superadmin/email", label: "Email Templates", icon: Inbox },
+    {href: "/changepassword-form", label: "Update Password", icon: LockKeyhole },
   ];
 
   if (loading) {
@@ -106,17 +119,19 @@ export default function SuperAdminLayout({ children, userName }: Props) {
             collapsed ? "w-20" : "w-64"
           )}
         >
-          {/* Header */}
-          <SidebarHeader className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-            <div
-              className={cn(
-                "flex items-center gap-2 transition-opacity duration-300",
-                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              )}
-            >
-              <ShieldCheck className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-              <h1 className="text-lg font-semibold">SuperAdmin</h1>
-            </div>
+           {/* ✅ Logo / Header */}
+          <SidebarHeader className="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-800">
+            {settings?.logo ? (
+              <Image
+                src={settings.logo}
+                alt={settings.siteName || "Admin Logo"}
+                width={120}
+                height={40}
+                className="object-contain"
+              />
+            ) : (
+              <h1 className="text-lg font-semibold text-blue-500 dark:text-blue-400">SuperAdmin</h1>
+            )}
           </SidebarHeader>
 
           {/* Sidebar Links */}

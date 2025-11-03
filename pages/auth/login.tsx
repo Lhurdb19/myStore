@@ -1,6 +1,6 @@
 "use client";
 
-import Logo from "@/components/logo";
+// import Logo from "@/components/logo";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const { settings } = useSettings();
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -97,7 +99,7 @@ export default function LoginPage() {
   if (status === "authenticated") return null;
 
   return (
-    <div className="w-full h-screen flex flex-col lg:flex-row justify-center items-center gap-6 lg:gap-10 px-4 lg:px-[100px] bg-[rgba(0,0,0,1.0)]">
+    <div className="fixed top-0 z-50 w-full h-screen flex flex-col lg:flex-row justify-center items-center gap-6 lg:gap-10 px-4 lg:px-[100px] bg-[rgba(0,0,0,1.0)]">
       <div className="hidden relative lg:block w-[850px] h-[600px] rounded-2xl overflow-hidden">
         <Image
           src="/store.jpg"
@@ -109,8 +111,24 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full lg:w-1/3 flex flex-col text-white">
-        <div className="mb-5 flex items-center justify-between">
-          <Logo />
+        <div className="-mb-2 flex items-center justify-between">
+          {/* ✅ Dynamic Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            {settings?.logo ? (
+              <Image
+                src={settings.logo}
+                alt={settings.siteName || "Logo"}
+                width={200}
+                height={200}
+                className="rounded-md object-contain"
+              />
+            ) : (
+              <span className="text-2xl font-extrabold text-gray-800 dark:text-white">
+                <span className="text-green-600">Shop</span>Ease
+              </span>
+            )}
+            {!settings?.logo && <span className="sr-only">{settings?.siteName || "ShopEase"}</span>}
+          </Link>
           <Link href="/auth/register">
             <p className="text-[#196D1A] hover:text-[#fff] font-thin text-sm">
               Not Registered Yet? Signup.
@@ -130,9 +148,8 @@ export default function LoginPage() {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="Email"
-            className={`w-full p-4 text-[#fff] border rounded focus:outline-none focus:ring-2 ${
-              emailError ? "border-red-500 focus:ring-red-500" : "border-gray-500 focus:ring-[#196D1A]"
-            }`}
+            className={`w-full p-4 text-[#fff] border rounded focus:outline-none focus:ring-2 ${emailError ? "border-red-500 focus:ring-red-500" : "border-gray-500 focus:ring-[#196D1A]"
+              }`}
             required
           />
 
@@ -167,9 +184,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`bg-[#196D1A] text-white py-4 rounded hover:bg-green-600 transition ${
-              loading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
+            className={`bg-[#196D1A] text-white py-4 rounded hover:bg-green-600 transition ${loading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>

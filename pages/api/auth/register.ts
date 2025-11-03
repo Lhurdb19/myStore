@@ -23,15 +23,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const hashedPassword = await bcrypt.hash(password, 10);
   const verificationToken = crypto.randomBytes(32).toString("hex");
 
+
   // Create user temporarily
+  const validRoles = ["user", "vendor", "admin", "superadmin"];
+  const userRole = validRoles.includes(role?.toLowerCase()?.trim()) ? role.toLowerCase() : "user";
+
   const user = await User.create({
     name,
     email,
     password,
-    role: role || "user",
+    role: userRole,
     emailVerified: false,
     verificationToken,
   });
+
 
   try {
     const transporter = nodemailer.createTransport({
@@ -45,16 +50,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const verificationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify?token=${verificationToken}&email=${email}`;
 
     await transporter.sendMail({
-      from: `"MyStore" <${process.env.EMAIL_USER}>`,
+      from: `"ShopEase" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Verify your email address",
+      subject: "Verify Your ShopEase Account ✅",
       html: `
-        <h2>Welcome to MyStore 🎉</h2>
-        <p>Click below to verify your email:</p>
-        <a href="${verificationLink}" style="background:#196D1A;color:white;padding:10px 15px;text-decoration:none;border-radius:8px;">Verify Email</a>
-        <p>If you didn’t request this, please ignore this message.</p>
-      `,
+    <div style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f4f6f8; padding:40px 0;">
+      <div style="max-width:600px; margin:0 auto; background:white; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.08); overflow:hidden;">
+        
+        <!-- Header -->
+        <div style="background-color:#196D1A; text-align:center; padding:25px;">
+          <img src="https://res.cloudinary.com/damamkuye/image/upload/v1761740811/image__1_-removebg-preview_exjxtz.png"
+               alt="ShopEase Logo"
+               style="width:120px; height:auto; margin-bottom:10px;" />
+          <h1 style="color:white; margin:0; font-size:22px;">Welcome to ShopEase</h1>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:30px;">
+          <h2 style="color:#333;">Hi ${name}, 👋</h2>
+          <p style="color:#555; font-size:15px; line-height:1.6;">
+            Thanks for signing up with <strong>ShopEase</strong>!  
+            To complete your registration and activate your account, please verify your email address by clicking the button below:
+          </p>
+
+          <div style="text-align:center; margin:30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify?token=${verificationToken}&email=${email}"
+              style="background-color:#196D1A; color:white; padding:12px 30px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block;">
+              Verify My Email
+            </a>
+          </div>
+
+          <p style="color:#777; font-size:14px;">
+            If you didn’t create a ShopEase account, you can safely ignore this message.
+          </p>
+
+          <p style="color:#777; font-size:13px; margin-top:25px;">
+            With love 💚,<br/>
+            <strong>The ShopEase Team</strong>
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color:#f0f0f0; padding:15px; text-align:center; font-size:12px; color:#888;">
+          © ${new Date().getFullYear()} ShopEase. All rights reserved.
+        </div>
+      </div>
+    </div>
+  `,
     });
+
 
     return res.status(201).json({
       message: "Registration successful! Please verify your email.",

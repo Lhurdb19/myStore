@@ -1,7 +1,7 @@
 import mongoose, { Schema, model, models, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
-export type Role = "user" | "admin" | "superadmin";
+export type Role = "user" | "admin" | "superadmin" | "vendor";
 
 export interface IUser extends Document {
   name: string;
@@ -28,11 +28,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ["user", "admin", "superadmin"],
-      default: "user",
-    },
+    role: { type: String, enum: ["user", "admin", "superadmin", "vendor"], default: "user" },
     suspended: { type: Boolean, default: false },
     meta: { type: Object },
     emailVerified: { type: Boolean, default: false },
@@ -43,8 +39,13 @@ const UserSchema = new Schema<IUser>(
     resetToken: String,
     resetTokenExpiry: Date,
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// 🔹 Add virtual "id" field for React
+UserSchema.virtual("id").get(function (this: { _id: mongoose.Types.ObjectId }) {
+  return this._id.toString();
+});
 
 // 🔐 Hash password before saving
 UserSchema.pre("save", async function (next) {
@@ -55,10 +56,11 @@ UserSchema.pre("save", async function (next) {
 });
 
 // 🔍 Compare passwords
-UserSchema.methods.comparePassword = async function (
-  candidatePassword: string
-) {
+UserSchema.methods.comparePassword = async function (candidatePassword: string) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default models.User || model<IUser>("User", UserSchema);
+// ✅ Prevent Mongoose model overwrite in dev mode
+delete mongoose.models.User;
+export default model<IUser>("User", UserSchema);
+

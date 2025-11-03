@@ -68,6 +68,20 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+   // Vendor routes
+  if (pathname.startsWith("/vendor")) {
+    if ((token.role === "vendor" || token.role === "superadmin") && !token.otpVerified) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/auth/verify-otp";
+      return NextResponse.redirect(url);
+    }
+    if (token.role !== "vendor" && token.role !== "superadmin") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+  }
+
   // 👤 User routes
   if (pathname.startsWith("/user")) {
     if (token.role !== "user" && token.role !== "superadmin") {
@@ -88,6 +102,7 @@ export async function middleware(req: NextRequest) {
 
     if (token.role === "superadmin") url.pathname = "/superadmin/dashboard";
     else if (token.role === "admin") url.pathname = "/admin/dashboard";
+    else if (token.role === "vendor") url.pathname = "/vendor/dashboard";
     else url.pathname = "/user/dashboard";
 
     return NextResponse.redirect(url);
@@ -101,6 +116,7 @@ export const config = {
   matcher: [
     "/superadmin/:path*",
     "/admin/:path*",
+    "/vendor/:path*",
     "/user/:path*",
     "/auth/:path*",
   ],

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast, Toaster } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Monitor, Mail, Bell, Shield } from "lucide-react";
+import Image from "next/image";
 
 interface Settings {
   siteName: string;
@@ -58,14 +59,21 @@ export default function SettingsPage() {
     setLoading(true);
     let logoUrl = settings.logo;
 
+    // 🔹 Upload logo if selected
     if (logoFile) {
       const formData = new FormData();
-      formData.append("logo", logoFile);
+      formData.append("logo", logoFile); // ✅ correct key name
+
       try {
-        const res = await fetch("/api/admins/upload-logo", { method: "POST", body: formData });
+        const res = await fetch("/api/admins/upload-logo", {
+          method: "POST",
+          body: formData,
+        });
         const data = await res.json();
-        if (data.success) logoUrl = data.url;
-        else {
+
+        if (data.success) {
+          logoUrl = data.url;
+        } else {
           toast.error(data.message || "Failed to upload logo");
           setLoading(false);
           return;
@@ -77,6 +85,7 @@ export default function SettingsPage() {
       }
     }
 
+    // 🔹 Save settings after upload
     try {
       const res = await fetch("/api/admins/settings", {
         method: "PATCH",
@@ -84,14 +93,20 @@ export default function SettingsPage() {
         body: JSON.stringify({ ...settings, logo: logoUrl }),
       });
       const data = await res.json();
-      if (data.success) toast.success("Settings updated successfully!");
-      else toast.error(data.message || "Failed to save settings");
+
+      if (data.success) {
+        toast.success("Settings updated successfully!");
+        fetchSettings(); // refresh to get updated logo
+      } else {
+        toast.error(data.message || "Failed to save settings");
+      }
     } catch {
       toast.error("Error saving settings");
     } finally {
       setLoading(false);
     }
   };
+
 
   const sectionClasses =
     "flex items-center space-x-2 font-semibold cursor-pointer text-lg mb-2 text-gray-900 dark:text-white";
@@ -128,9 +143,39 @@ export default function SettingsPage() {
                 <span className="text-gray-700 dark:text-gray-300 text-sm">
                   {logoFile ? logoFile.name : settings.logo ? "Current Logo" : "No file chosen"}
                 </span>
+
+                {/* 🗑️ Delete Logo Button */}
+                {(logoFile || settings.logo) && (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm("Are you sure you want to delete the logo?")) return;
+                      setLoading(true);
+                      try {
+                        const res = await fetch("/api/admins/delete-logo", { method: "DELETE" });
+                        const data = await res.json();
+                        if (data.success) {
+                          toast.success("Logo deleted successfully!");
+                          setLogoFile(null);
+                          setSettings((prev) => ({ ...prev, logo: "" }));
+                        } else {
+                          toast.error(data.message || "Failed to delete logo");
+                        }
+                      } catch {
+                        toast.error("Error deleting logo");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-sm"
+                  >
+                    Delete
+                  </Button>
+                )}
               </div>
+
               {(logoFile || settings.logo) && (
-                <img
+                <Image width={200} height={200}
                   src={logoFile ? URL.createObjectURL(logoFile) : settings.logo}
                   alt="Logo Preview"
                   className="mt-2 w-32 h-32 object-contain rounded border border-gray-300 dark:border-gray-600"
