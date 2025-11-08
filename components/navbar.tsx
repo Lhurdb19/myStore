@@ -42,9 +42,16 @@ export default function Navbar() {
   const router = useRouter();
   const { settings } = useSettings();
 
+  // NEW: categories state
+  const [categories, setCategories] = useState<string[]>([]);
+  const [catsLoading, setCatsLoading] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node))
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      )
         setDropdownOpen(false);
       if (searchRef.current && !searchRef.current.contains(event.target as Node))
         setShowSuggestions(false);
@@ -60,7 +67,9 @@ export default function Navbar() {
         return;
       }
       try {
-        const res = await fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(
+          `/api/products/search?q=${encodeURIComponent(searchQuery)}`
+        );
         const data = await res.json();
         setSuggestions(data);
         setShowSuggestions(true);
@@ -71,6 +80,35 @@ export default function Navbar() {
     const timer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // NEW: fetch categories from /api/categories once
+  useEffect(() => {
+    let mounted = true;
+    async function loadCategories() {
+      setCatsLoading(true);
+      try {
+        const res = await fetch("/api/categories");
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        const data = await res.json();
+        // Expect data.categories as array of strings
+        if (mounted && Array.isArray(data.categories)) {
+          // filter out empty/null and ensure unique
+          const cleaned = data.categories
+            .filter((c: any) => typeof c === "string" && c.trim() !== "")
+            .map((c: string) => c.trim());
+          setCategories(Array.from(new Set(cleaned)));
+        }
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      } finally {
+        if (mounted) setCatsLoading(false);
+      }
+    }
+    loadCategories();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +158,10 @@ export default function Navbar() {
             </Link>
 
             {/* Search Bar */}
-            <div className="relative hidden md:flex flex-1 mx-6 max-w-md" ref={searchRef}>
+            <div
+              className="relative hidden md:flex flex-1 mx-6 max-w-md"
+              ref={searchRef}
+            >
               <form onSubmit={handleSubmit} className="w-full">
                 <Input
                   type="text"
@@ -140,7 +181,9 @@ export default function Navbar() {
                       className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <span>{item.title}</span>
-                      <span className="text-green-600 font-semibold text-sm">₦{item.price}</span>
+                      <span className="text-green-600 font-semibold text-sm">
+                        ₦{Number(item.price).toLocaleString()}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -163,16 +206,28 @@ export default function Navbar() {
                     Categories <ChevronDown className="w-4 h-4" />
                   </button>
                   {categoriesOpen && (
-                    <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2 z-50">
-                      <Link href="/category/electronics" className="block px-4 py-2 hover:bg-gray-100">
-                        Electronics
-                      </Link>
-                      <Link href="/category/fashion" className="block px-4 py-2 hover:bg-gray-100">
-                        Fashion
-                      </Link>
-                      <Link href="/category/home" className="block px-4 py-2 hover:bg-gray-100">
-                        Home
-                      </Link>
+                    <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2 z-50 max-h-64 overflow-auto">
+                      {/* if categories still loading show fallback */}
+                      {catsLoading ? (
+                        <div className="px-4 py-2 text-sm text-gray-500">
+                          Loading...
+                        </div>
+                      ) : categories.length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-500">
+                          No categories
+                        </div>
+                      ) : (
+                        categories.map((cat) => (
+                          <Link
+                            key={cat}
+                            href={`/category/${encodeURIComponent(cat)}`}
+                            className="block px-4 py-2 hover:bg-gray-100"
+                            onClick={() => setCategoriesOpen(false)}
+                          >
+                            {cat}
+                          </Link>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
@@ -187,9 +242,24 @@ export default function Navbar() {
                   </button>
                   {pagesOpen && (
                     <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2 z-50">
-                      <Link href="/about" className="block px-4 py-2 hover:bg-gray-100">About Us</Link>
-                      <Link href="/contact" className="block px-4 py-2 hover:bg-gray-100">Contact Us</Link>
-                      <Link href="/faq" className="block px-4 py-2 hover:bg-gray-100">FAQ / Help</Link>
+                      <Link
+                        href="/about"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        About Us
+                      </Link>
+                      <Link
+                        href="/contact"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        Contact Us
+                      </Link>
+                      <Link
+                        href="/faq"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        FAQ / Help
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -204,9 +274,24 @@ export default function Navbar() {
                   </button>
                   {blogOpen && (
                     <div className="absolute mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2 z-50">
-                      <Link href="/blog" className="block px-4 py-2 hover:bg-gray-100">All Posts</Link>
-                      <Link href="/blog/latest" className="block px-4 py-2 hover:bg-gray-100">Latest</Link>
-                      <Link href="/blog/popular" className="block px-4 py-2 hover:bg-gray-100">Popular</Link>
+                      <Link
+                        href="/blog"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        All Posts
+                      </Link>
+                      <Link
+                        href="/blog/latest"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        Latest
+                      </Link>
+                      <Link
+                        href="/blog/popular"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        Popular
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -239,10 +324,16 @@ export default function Navbar() {
                     </button>
                     {dropdownOpen && (
                       <div className="absolute right-0 mt-3 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-50">
-                        <Link href="/user/profile" className="block px-4 py-2 hover:bg-gray-100">
+                        <Link
+                          href="/user/profile"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                        >
                           My Profile
                         </Link>
-                        <Link href="/user/orders" className="block px-4 py-2 hover:bg-gray-100">
+                        <Link
+                          href="/user/orders"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                        >
                           My Orders
                         </Link>
                         <button
@@ -269,26 +360,69 @@ export default function Navbar() {
                   </Button>
                 </SheetTrigger>
 
-                <SheetContent side="right" className="w-[100%] bg-white dark:bg-gray-900 flex flex-col">
+                <SheetContent
+                  side="right"
+                  className="w-[100%] bg-white dark:bg-gray-900 flex flex-col"
+                >
                   <SheetHeader className="p-4 border-b">
                     <SheetTitle className="text-xl font-semibold">Menu</SheetTitle>
                   </SheetHeader>
                   <div className="flex flex-col p-4 space-y-4">
-                    <SheetClose asChild><Link href="/products">Products</Link></SheetClose>
-                    <SheetClose asChild><Link href="/about">About Us</Link></SheetClose>
-                    <SheetClose asChild><Link href="/contact">Contact Us</Link></SheetClose>
-                    <SheetClose asChild><Link href="/faq">FAQ / Help</Link></SheetClose>
-                    <SheetClose asChild><Link href="/blog">Blog</Link></SheetClose>
+                    <SheetClose asChild>
+                      <Link href="/products">Products</Link>
+                    </SheetClose>
+
+                    {/* Mobile categories from API */}
+                    <div>
+                      <div className="font-medium mb-2">Categories</div>
+                      {catsLoading ? (
+                        <div className="text-sm text-gray-500">Loading...</div>
+                      ) : categories.length === 0 ? (
+                        <div className="text-sm text-gray-500">No categories</div>
+                      ) : (
+                        categories.map((cat) => (
+                          <SheetClose asChild key={cat}>
+                            <Link href={`/category/${encodeURIComponent(cat)}`}>
+                              {cat}
+                            </Link>
+                          </SheetClose>
+                        ))
+                      )}
+                    </div>
+
+                    <SheetClose asChild>
+                      <Link href="/about">About Us</Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Link href="/contact">Contact Us</Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Link href="/faq">FAQ / Help</Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Link href="/blog">Blog</Link>
+                    </SheetClose>
                     {session?.user ? (
                       <>
-                        <SheetClose asChild><Link href="/user/profile">My Profile</Link></SheetClose>
-                        <SheetClose asChild><Link href="/user/orders">My Orders</Link></SheetClose>
                         <SheetClose asChild>
-                          <button onClick={handleLogout} className="text-red-600 text-left">Logout</button>
+                          <Link href="/user/profile">My Profile</Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link href="/user/orders">My Orders</Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <button
+                            onClick={handleLogout}
+                            className="text-red-600 text-left"
+                          >
+                            Logout
+                          </button>
                         </SheetClose>
                       </>
                     ) : (
-                      <SheetClose asChild><Link href="/auth/login">Login</Link></SheetClose>
+                      <SheetClose asChild>
+                        <Link href="/auth/login">Login</Link>
+                      </SheetClose>
                     )}
                   </div>
                 </SheetContent>

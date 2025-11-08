@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ message: "Forbidden. You do not have access." });
   }
 
-  const { title, description, price, stock, imagesBase64 } = req.body;
+  const { title, description, price, stock, category, imagesBase64 } = req.body;
 
   try {
     await connectDB();
@@ -42,12 +42,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const slug = title.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now().toString().slice(-4);
 
+    const categorySlug = category.toLowerCase().replace(/\s+/g, "-");
+    
     const product = await Product.create({
       title,
       slug,
       description,
       price,
       stock: stock || 0,
+      category: categorySlug,  // ✅ Save as slug
       images: uploaded,
       createdBy: session.user.id,
     });

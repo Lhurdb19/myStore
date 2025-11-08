@@ -10,15 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,   // e.g., smtp.mailgun.org
-      port: Number(process.env.EMAIL_PORT), // 587 or 465
-      secure: false,
+      host: process.env.EMAIL_HOST,
+      port: Number(process.env.EMAIL_PORT),
+      secure: false, // true for 465, false for 587
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: false, // allow self-signed certificates for dev
       },
     });
 
