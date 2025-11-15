@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { toast, Toaster } from "sonner";
 import { useCart } from "@/hooks/useCart";
+import axios from "axios";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -60,6 +61,18 @@ export default function PaymentPage() {
       currency: "NGN",
       onSuccess: async () => {
         toast.success("Payment successful!");
+
+        await axios.post("/api/order", {
+          items: items.map((i: any) => ({
+            product: i.productId,
+            quantity: i.quantity,
+            price: i.price,
+          })),
+          shipping,
+          total,
+          paymentMethod: "paystack",
+        });
+
         await clearCart.mutateAsync();
         setIsProcessing(false);
         router.push("/order-success");
@@ -89,6 +102,17 @@ export default function PaymentPage() {
       },
       callback: async function (response: any) {
         if (response.status === "successful") {
+          await axios.post("/api/order", {
+            items: items.map((i: any) => ({
+              product: i.productId,
+              quantity: i.quantity,
+              price: i.price,
+            })),
+            shipping,
+            total,
+            paymentMethod: "flutterwave",
+          });
+
           await clearCart.mutateAsync();
           router.push("/order-success");
         }
@@ -99,6 +123,17 @@ export default function PaymentPage() {
 
   // COD
   const handleCOD = async () => {
+    await axios.post("/api/order", {
+      items: items.map((i: any) => ({
+        product: i.productId,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+      shipping,
+      total,
+      paymentMethod: "cod",
+    });
+
     toast.success("Order placed successfully!");
     await clearCart.mutateAsync();
     setIsProcessing(false);
@@ -132,9 +167,8 @@ export default function PaymentPage() {
         {paymentMethods.map((method) => (
           <label
             key={method.id}
-            className={`flex items-center text-black p-3 border rounded-xl cursor-pointer hover:bg-gray-100 ${
-              selected === method.id ? "border-blue-600" : ""
-            }`}
+            className={`flex items-center text-black p-3 border rounded-xl cursor-pointer hover:bg-gray-100 ${selected === method.id ? "border-blue-600" : ""
+              }`}
           >
             <input
               type="radio"

@@ -1,32 +1,31 @@
-//admin/order
+"use client";
 
-export default function ManageOrders() {
-  const orders = [
-    { id: "ORD123", customer: "John Doe", status: "Delivered" },
-    { id: "ORD124", customer: "Mary Jane", status: "Pending" },
-  ];
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+export default function AdminOrders() {
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    axios.get("/api/order/all").then((res) => setOrders(res.data.orders));
+  }, []);
 
   return (
-    <section className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Manage Orders</h2>
-      <table className="w-full border-collapse bg-white shadow-md">
-        <thead className="bg-gray-200">
-          <tr>
-            <th className="p-3 text-left">Order ID</th>
-            <th className="p-3 text-left">Customer</th>
-            <th className="p-3 text-left">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((o, index) => (
-            <tr key={index} className="border-t">
-              <td className="p-3">{o.id}</td>
-              <td className="p-3">{o.customer}</td>
-              <td className="p-3">{o.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6">All Orders</h1>
+
+      <div className="space-y-4">
+        {orders.map((order) => (
+          <div key={order._id} className="p-4 border rounded-xl bg-gray-600 shadow-sm">
+            <p className="font-semibold">{order.shipping.name}</p>
+            <p>{order.shipping.email}</p>
+            <p>Total: ₦{order.total}</p>
+            <p>Payment: {order.paymentMethod}</p>
+            <p>Status: {order.status}</p>
+          </div>
+        ))}
+
+      </div>
+    </div>
   );
 }
