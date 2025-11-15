@@ -5,6 +5,7 @@ export default function Document() {
     <Html lang="en">
       <Head />
       <body className="antialiased">
+        <script src="https://checkout.flutterwave.com/v3.js"></script>
         <Main />
         <NextScript />
       </body>

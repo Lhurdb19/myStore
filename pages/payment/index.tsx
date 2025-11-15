@@ -3,17 +3,24 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { toast, Toaster } from "sonner";
-import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
 import { useCart } from "@/hooks/useCart";
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { clearCart } = useCart(); // ✅ properly typed clearCart
+  const { clearCart } = useCart();
+
   const [selected, setSelected] = useState("");
   const [shipping, setShipping] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Load Flutterwave script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.flutterwave.com/v3.js";
+    document.body.appendChild(script);
+  }, []);
 
   // Load query params
   useEffect(() => {
@@ -39,7 +46,7 @@ export default function PaymentPage() {
     { id: "cod", label: "Cash on Delivery" },
   ];
 
-  // ✅ Paystack
+  // PAYSTACK
   const handlePaystackPayment = async () => {
     if (!shipping) return toast.error("Shipping details missing");
 
@@ -53,11 +60,7 @@ export default function PaymentPage() {
       currency: "NGN",
       onSuccess: async () => {
         toast.success("Payment successful!");
-        try {
-          await clearCart.mutateAsync(); // ✅ Clear cart after payment
-        } catch (err) {
-          console.error("Failed to clear cart:", err);
-        }
+        await clearCart.mutateAsync();
         setIsProcessing(false);
         router.push("/order-success");
       },
@@ -68,68 +71,47 @@ export default function PaymentPage() {
     });
   };
 
-  // ✅ Flutterwave
-  const flutterwaveConfig = {
-    public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY!,
-    tx_ref: `tx-${Date.now()}`,
-    amount: total,
-    currency: "NGN",
-    payment_options: "card,ussd,qr",
-    customer: {
-      email: shipping?.email,
-      phone_number: shipping?.phone,
-      name: shipping?.name,
-    },
-    customizations: {
-      title: "ShopEase Checkout",
-      description: "Order Payment",
-      logo: "/store.jpg",
-    },
-  };
-  const triggerFlutter = useFlutterwave(flutterwaveConfig);
+  // FLUTTERWAVE
+  const payWithFlutterwave = () => {
+    if (!shipping) return;
 
-  const handleFlutterwavePay = async () => {
-    triggerFlutter({
-      callback: async (response) => {
+    // @ts-ignore
+    window.FlutterwaveCheckout({
+      public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY!,
+      tx_ref: `tx-${Date.now()}`,
+      amount: total,
+      currency: "NGN",
+      payment_options: "card, ussd, banktransfer",
+      customer: {
+        email: shipping.email,
+        phone_number: shipping.phone,
+        name: shipping.name,
+      },
+      callback: async function (response: any) {
         if (response.status === "successful") {
-          toast.success("Payment successful!");
-          try {
-            await clearCart.mutateAsync(); // ✅ Clear cart
-          } catch (err) {
-            console.error("Failed to clear cart:", err);
-          }
+          await clearCart.mutateAsync();
           router.push("/order-success");
         }
-        setIsProcessing(false);
-        closePaymentModal();
       },
-      onClose: () => {
-        toast.warning("Payment closed.");
-        setIsProcessing(false);
-      },
+      onclose: () => toast.error("Payment closed."),
     });
   };
 
-  // ✅ COD
+  // COD
   const handleCOD = async () => {
     toast.success("Order placed successfully!");
-    try {
-      await clearCart.mutateAsync(); // ✅ Clear cart for COD too
-    } catch (err) {
-      console.error("Failed to clear cart:", err);
-    }
+    await clearCart.mutateAsync();
     setIsProcessing(false);
     router.push("/order-success");
   };
 
   const handlePayment = () => {
     if (!selected) return toast.error("Select a payment method");
-    if (!shipping) return toast.error("Shipping details not loaded yet");
 
     setIsProcessing(true);
 
     if (selected === "paystack") handlePaystackPayment();
-    else if (selected === "flutterwave") handleFlutterwavePay();
+    else if (selected === "flutterwave") payWithFlutterwave();
     else handleCOD();
   };
 
