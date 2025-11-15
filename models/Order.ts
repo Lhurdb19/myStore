@@ -2,9 +2,21 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
-  product: mongoose.Types.ObjectId;
-  quantity: number;
-  status: "pending" | "shipped" | "delivered" | "cancelled";
+  items: {
+    product: mongoose.Types.ObjectId;
+    quantity: number;
+    price: number;
+  }[];
+  total: number;
+  shipping: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city?: string;
+    postalCode?: string;
+  };
+  status: "pending" | "completed" | "cancelled";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,9 +24,23 @@ export interface IOrder extends Document {
 const OrderSchema = new Schema<IOrder>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-    quantity: { type: Number, default: 1 },
-    status: { type: String, enum: ["pending", "shipped", "delivered", "cancelled"], default: "pending" },
+    items: [
+      {
+        product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+        quantity: { type: Number, required: true, default: 1 },
+        price: { type: Number, required: true },
+      },
+    ],
+    total: { type: Number, required: true },
+    shipping: {
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+      address: { type: String, required: true },
+      city: { type: String },
+      postalCode: { type: String },
+    },
+    status: { type: String, enum: ["pending", "completed", "cancelled"], default: "pending" },
   },
   { timestamps: true }
 );

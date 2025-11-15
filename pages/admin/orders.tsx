@@ -1,3 +1,5 @@
+//admin/order
+
 export default function ManageOrders() {
   const orders = [
     { id: "ORD123", customer: "John Doe", status: "Delivered" },

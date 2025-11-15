@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
+import ProductCard from "@/components/home/ProductCard";
 
 interface Product {
   _id: string;
@@ -15,6 +15,8 @@ interface Props {
   slug: string;
   products?: Product[];
   loading: boolean;
+  wishlist: string[];
+  toggleWishlist: (productId: string, title: string) => Promise<void>;
 }
 
 export default function CategorySection({ title, slug, products, loading }: Props) {
@@ -22,7 +24,7 @@ export default function CategorySection({ title, slug, products, loading }: Prop
     <section className="mb-10">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
-        <Link href={`/products?category=${slug}`} className="text-blue-600 hover:underline">
+        <Link href={`/category/${slug}`} className="text-blue-600 hover:underline">
           View All →
         </Link>
       </div>
@@ -34,25 +36,9 @@ export default function CategorySection({ title, slug, products, loading }: Prop
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-4 lg:gap-10 xl:gap-10 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
           {products?.map((product) => (
-            <Link href={`/products/${product.slug}`} key={product._id}>
-              <div className="border rounded-lg overflow-hidden hover:shadow-md transition-all">
-                <Image
-                  src={product.images?.[0] || "/placeholder.png"}
-                  alt={product.title}
-                  width={300}
-                  height={200}
-                  className="w-full h-[180px] object-cover"
-                />
-                <div className="p-3">
-                  <h3 className="text-sm font-medium truncate">{product.title}</h3>
-                  <p className="text-blue-600 font-semibold mt-1">
-                    ₦{product.price.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </Link>
+            <ProductCard key={product._id} product={product} />
           ))}
         </div>
       )}

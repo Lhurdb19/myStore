@@ -103,7 +103,7 @@ export async function middleware(req: NextRequest) {
     if (token.role === "superadmin") url.pathname = "/superadmin/dashboard";
     else if (token.role === "admin") url.pathname = "/admin/dashboard";
     else if (token.role === "vendor") url.pathname = "/vendor/dashboard";
-    else url.pathname = "/user/dashboard";
+    else url.pathname = "/";
 
     return NextResponse.redirect(url);
   }

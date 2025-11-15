@@ -1,33 +1,57 @@
+"use client";
+
 import { useRouter } from "next/router";
-import { useQuery } from "@tanstack/react-query";
-import CategoryHeader from "@/components/home/CategoryHeader";
-import ProductGrid from "@/components/home/ProductGrid";
-import { fetchProductsByCategory } from "@/lib/fetchProductsByCategory";
+import { useEffect, useState } from "react";
+import ProductCard from "@/components/home/ProductCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function CategoryPage() {
   const router = useRouter();
   const { slug } = router.query;
 
-  const { data: products, isLoading, isError } = useQuery({
-    queryKey: ["products", slug],
-    queryFn: () => fetchProductsByCategory(slug as string),
-    enabled: !!slug,
-  });
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (isLoading) return <p className="text-center py-20">Loading products...</p>;
-  if (isError) return <p className="text-center py-20">Error fetching products.</p>;
+  useEffect(() => {
+    if (!slug) return;
+
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(`/api/products?category=${slug}`);
+        const data = await res.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load products for this category");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [slug]);
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <CategoryHeader
-        title={`Category: ${slug}`}
-        description="Browse through our collection of carefully selected items"
-      />
+    <div className="px-6 lg:px-25 xl:px-25 py-10 max-w-8xl">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 capitalize">
+        {slug?.toString().replace(/-/g, " ")}
+      </h1>
 
-      {products?.length ? (
-        <ProductGrid products={products} />
+      {loading ? (
+        <div className="grid gap-10 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="w-full h-[250px] rounded-lg" />
+          ))}
+        </div>
+      ) : products.length > 0 ? (
+        <div className="grid gap-4 lg:gap-10 xl:gap-10 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          {products.map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))}
+        </div>
       ) : (
-        <p className="text-center text-gray-500 py-10">No products found in this category.</p>
+        <p className="text-center text-gray-500">No products found in this category.</p>
       )}
     </div>
   );

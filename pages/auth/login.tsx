@@ -27,18 +27,18 @@ export default function LoginPage() {
 
       // ✅ If suspended, redirect to suspended page
       if (suspended) {
-        router.push("/auth/suspended");
+        router.replace("/auth/suspended");
         return;
       }
 
       if (!otpVerified) {
-        router.push("/auth/verify-otp");
+        router.replace("/auth/verify-otp");
         return;
       }
 
-      if (role === "superadmin") router.push("/superadmin/dashboard");
-      else if (role === "admin") router.push("/admin/dashboard");
-      else router.push("/user/dashboard");
+      if (role === "superadmin") router.replace("/superadmin/dashboard");
+      else if (role === "admin") router.replace("/admin/dashboard");
+      else router.replace("/");
     }
   }, [status, session, router]);
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(`/auth/verify-otp?email=${form.email}`);
+      router.replace(`/auth/verify-otp?email=${form.email}`);
     } catch (err) {
       console.error(err);
       setEmailError("Something went wrong. Please try again.");

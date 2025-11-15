@@ -54,7 +54,8 @@ export default function VerifyOTPPage() {
       const role = data.user?.role || session?.user?.role;
       if (role === "superadmin") router.replace("/superadmin/dashboard");
       else if (role === "admin") router.replace("/admin/dashboard");
-      else router.replace("/user/dashboard");
+      else if (role === "vendor") router.replace("/vendor/dashboard");
+      else router.replace("/");
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Please try again.");
